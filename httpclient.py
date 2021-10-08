@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # coding: utf-8
 # Copyright 2016 Abram Hindle, https://github.com/tywtyw2002, and https://github.com/treedust
+# Copyright 2021 Tianying Xia 
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -41,12 +42,17 @@ class HTTPClient(object):
         return None
 
     def get_code(self, data):
-        return None
+        words_list = data.split(' ')
+        return int(words_list[1])
 
     def get_headers(self,data):
-        return None
+        header_body_list = data.split('\r\n\r\n')
+        return header_body_list[0]
 
     def get_body(self, data):
+        body_or_not_list = data.split('\r\n\r\n')
+        if len(body_or_not_list) > 1:
+            return body_or_not_list[1]
         return None
     
     def sendall(self, data):
@@ -68,13 +74,71 @@ class HTTPClient(object):
         return buffer.decode('utf-8')
 
     def GET(self, url, args=None):
-        code = 500
-        body = ""
+        #code = 500
+        #body = ""
+        url_parsed = urllib.parse.urlparse(url)  # named tuple 
+        loc_split = url_parsed.netloc.split(':')
+        host = loc_split[0]
+        if len(loc_split) < 2:
+            port = 80
+        else:
+            port = int(loc_split[1])
+        path = url_parsed.path
+        if path == '':
+            path = '/'
+        
+        self.connect(host, port)
+        msg_send = f'GET {path} HTTP/1.1\r\n'
+        host_name_str = f'Host: {url_parsed.netloc}\r\n'
+        user_agent_str = 'User-Agent: This agent\r\n'
+        connection_str = 'Connection: keep-alive\r\n'
+        
+        msg_send = msg_send + host_name_str + user_agent_str + connection_str + '\r\n'
+
+        self.sendall(msg_send)
+        self.socket.shutdown(socket.SHUT_WR)
+
+        msg_recv = self.recvall(self.socket)
+        code = self.get_code(msg_recv)
+        body = self.get_body(msg_recv)
         return HTTPResponse(code, body)
 
     def POST(self, url, args=None):
-        code = 500
-        body = ""
+        #code = 500
+        #body = ""
+        url_parsed = urllib.parse.urlparse(url)  # named tuple 
+        loc_split = url_parsed.netloc.split(':')
+        host = loc_split[0]
+        if len(loc_split) < 2:
+            port = 80
+        else:
+            port = int(loc_split[1])
+        path = url_parsed.path
+        if path == '':
+            path = '/'
+        
+        self.connect(host, port)
+        msg_send = f'POST {path} HTTP/1.1\r\n'
+        host_name_str = f'Host: {url_parsed.netloc}\r\n'
+        user_agent_str = 'User-Agent: This agent\r\n'
+        content_type_str = 'Content-Type: application/x-www-form-urlencoded\r\n'
+        connection_str = 'Connection: close\r\n'
+        query = []
+        if args != None:
+            for arg in args:
+                key = args[arg].replace(' ', '+')
+                query.append(arg + '=' + key)
+        query_str = '&'.join(query)
+        content_length_str = 'Content-Length: ' + str( len(query_str) ) + '\r\n'
+        
+        msg_send = msg_send + host_name_str + user_agent_str + content_type_str + content_length_str + connection_str + '\r\n' + query_str
+
+        self.sendall(msg_send)
+        self.socket.shutdown(socket.SHUT_WR)
+
+        msg_recv = self.recvall(self.socket)
+        code = self.get_code(msg_recv)
+        body = self.get_body(msg_recv)
         return HTTPResponse(code, body)
 
     def command(self, url, command="GET", args=None):
