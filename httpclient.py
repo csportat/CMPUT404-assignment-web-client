@@ -131,8 +131,8 @@ class HTTPClient(object):
         query = []
         if args != None:
             for arg in args:
-                key = args[arg].replace(' ', '+')
-                query.append(arg + '=' + key)
+                value = args[arg].replace(' ', '+')
+                query.append(arg.replace(' ', '+') + '=' + value)
         query_str = '&'.join(query)
         content_length_str = 'Content-Length: ' + str( len(query_str) ) + '\r\n'
         
