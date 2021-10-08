@@ -101,6 +101,8 @@ class HTTPClient(object):
         msg_recv = self.recvall(self.socket)
         code = self.get_code(msg_recv)
         body = self.get_body(msg_recv)
+        self.close()
+        print(msg_recv)
         return HTTPResponse(code, body)
 
     def POST(self, url, args=None):
@@ -139,6 +141,8 @@ class HTTPClient(object):
         msg_recv = self.recvall(self.socket)
         code = self.get_code(msg_recv)
         body = self.get_body(msg_recv)
+        self.close()
+        print(msg_recv)
         return HTTPResponse(code, body)
 
     def command(self, url, command="GET", args=None):
